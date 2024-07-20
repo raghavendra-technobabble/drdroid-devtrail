@@ -1,0 +1,67 @@
+{
+  "agent": {
+    "metrics_collection_interval": 60,
+    "run_as_user": "root"
+  },
+  "metrics": {
+    "namespace": "ECS/Containers",
+    "metrics_collected": {
+      "cpu": {
+        "measurement": [
+          {"name": "usage_active", "rename": "CPUUsageActive", "unit": "Percent"}
+        ],
+        "metrics_collection_interval": 60
+      },
+      "memory": {
+        "measurement": [
+          {"name": "mem_used_percent", "rename": "MemoryUsedPercent", "unit": "Percent"}
+        ],
+        "metrics_collection_interval": 60
+      },
+      "disk": {
+        "measurement": [
+          {"name": "used_percent", "rename": "DiskUsedPercent", "unit": "Percent"}
+        ],
+        "ignore_file_system_types": ["sysfs", "devtmpfs"],
+        "metrics_collection_interval": 60
+      },
+      "diskio": {
+        "measurement": [
+          {"name": "io_time", "rename": "DiskIOTime", "unit": "Milliseconds"}
+        ],
+        "metrics_collection_interval": 60
+      },
+      "swap": {
+        "measurement": [
+          {"name": "swap_used_percent", "rename": "SwapUsedPercent", "unit": "Percent"}
+        ],
+        "metrics_collection_interval": 60
+      },
+      "netstat": {
+        "measurement": [
+          {"name": "tcp_established", "rename": "TcpEstablished", "unit": "Count"}
+        ],
+        "metrics_collection_interval": 60
+      },
+      "net": {
+        "measurement": [
+          {"name": "bytes_out", "rename": "NetworkBytesOut", "unit": "Bytes"}
+        ],
+        "metrics_collection_interval": 60
+      }
+    }
+  },
+  "logs": {
+    "logs_collected": {
+      "files": {
+        "collect_list": [
+          {
+            "file_path": "/var/log/shared/payment_service.log",
+            "log_group_name": "/ecs/fastbite/payment_service",
+            "log_stream_name": "{hostname}"
+          }
+        ]
+      }
+    }
+  }
+}
