@@ -12,17 +12,27 @@ services:
       - ./db_init:/docker-entrypoint-initdb.d
 
   payment_service:
-    build: .
+    build: ./payment_service
     environment:
-      - AWS_ACCESS_KEY_ID=your_access_key
-      - AWS_SECRET_ACCESS_KEY=your_secret_key
-      - AWS_DEFAULT_REGION=your_region
+      - AWS_DEFAULT_REGION=ap-south-1
     volumes:
-      - ./logs:/var/log/shared
+      - ./logs:/var/log/shared  # Mount shared logs directory
+      - ~/.aws:/root/.aws:ro  # Mount AWS credentials
     depends_on:
       - db
+      - external_service
     ports:
       - "5000:5000"
+
+  external_service:
+    build: ./external_service
+    environment:
+      - AWS_DEFAULT_REGION=ap-south-1
+    volumes:
+      - ./logs:/var/log/shared  # Mount shared logs directory
+      - ~/.aws:/root/.aws:ro  # Mount AWS credentials
+    ports:
+      - "5001:5001"
 
   prometheus:
     image: prom/prometheus
@@ -45,5 +55,6 @@ services:
     image: amazon/cloudwatch-agent
     volumes:
       - ./cloudwatch-agent-config.json:/etc/cloudwatch-agent-config.json
-      - ./logs:/var/log/shared
+      - ./logs:/var/log/shared  # Mount shared logs directory
+      - ~/.aws:/root/.aws:ro  # Mount AWS credentials
     command: -config.file=/etc/cloudwatch-agent-config.json
