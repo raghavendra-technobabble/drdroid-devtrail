@@ -3,15 +3,17 @@ import time
 import random
 import logging
 import requests
-from prometheus_client import Counter, Histogram, start_http_server
+from prometheus_client import Summary, Counter, Histogram, start_http_server
 import boto3
 import os
 
 app = Flask(__name__)
 
 # Prometheus metrics
-REQUEST_COUNT = Counter('request_count', 'App Request Count', ['endpoint', 'method', 'http_status'])
-REQUEST_LATENCY = Histogram('request_latency_seconds', 'Request latency', ['endpoint'])
+#REQUEST_COUNT = Counter('payment_service_request_count', 'App Request Count', ['endpoint', 'method', 'http_status'])
+#REQUEST_LATENCY = Histogram('payment_service_request_latency_seconds', 'Request latency', ['endpoint'])
+#REQUEST_TIME = Summary('payment_service_request_processing_seconds', 'Time spent processing request')
+REQUEST_TIME = Summary('payment_service_request_processing_seconds', 'Time spent processing request', ['endpoint', 'http_status'])
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
@@ -51,16 +53,16 @@ def put_log_event(message):
 
 external_service_url = "http://external_service:5001"
 
-@app.before_request
-def before_request():
-    request.start_time = time.time()
+# @app.before_request
+# def before_request():
+#     request.start_time = time.time()
 
-@app.after_request
-def after_request(response):
-    request_latency = time.time() - request.start_time
-    REQUEST_LATENCY.labels(request.path).observe(request_latency)
-    REQUEST_COUNT.labels(request.path, request.method, response.status_code).inc()
-    return response
+# @app.after_request
+# def after_request(response):
+#     request_latency = time.time() - request.start_time
+#     REQUEST_LATENCY.labels(request.path).observe(request_latency)
+#     REQUEST_COUNT.labels(request.path, request.method, response.status_code).inc()
+#     return response
 
 # Scenario 1: Simulate Slow Response Times
 @app.route('/pay', methods=['POST'])
@@ -68,19 +70,52 @@ def pay():
     amount = request.json.get('amount')
     currency = request.json.get('currency')
 
+    start_time = time.time()  # Start the timer manually
+
     # Simulate delay
-    time.sleep(random.uniform(0.5, 2.0))
+    delay = random.uniform(0.5, 0.7)
+    time.sleep(delay)
 
     # Fetch exchange rate from external service
     response = requests.get(f'{external_service_url}/convert?amount={amount}&currency={currency}')
-    if response.status_code != 200:
+    
+    # Determine the status code of the response
+    status_code = response.status_code
+
+    # If the external service returns an error, log and return the error
+    if status_code != 200:
         logger.error("External service error")
         put_log_event("External service error")
-        return jsonify({"error": "External service error"}), 500
-    print(response)
+        REQUEST_TIME.labels(endpoint='/pay', http_status=status_code).observe(time.time() - start_time)
+        return jsonify({"error": "External service error"}), status_code
+
     converted_amount = response.json().get('converted_amount_in_usd')
     put_log_event(f'Payment done in USD successfully of {converted_amount}')
-    return jsonify({"status": "success", "converted_amount": converted_amount}), 200
+    
+    # Log the time taken to process the request along with the status code
+    REQUEST_TIME.labels(endpoint='/pay', http_status=status_code).observe(time.time() - start_time)
+    
+    return jsonify({"status": "success", "converted_amount": converted_amount}), status_code
+# @REQUEST_TIME.time()  # This decorator will automatically measure the time taken by the /pay route
+# def pay():
+#     amount = request.json.get('amount')
+#     currency = request.json.get('currency')
+
+#     # Simulate delay
+#     delay = random.uniform(0.5, 0.7)
+#     print(delay)
+#     time.sleep(delay)
+
+#     # Fetch exchange rate from external service
+#     response = requests.get(f'{external_service_url}/convert?amount={amount}&currency={currency}')
+#     if response.status_code != 200:
+#         logger.error("External service error")
+#         put_log_event("External service error")
+#         return jsonify({"error": "External service error"}), 500
+#     print(response)
+#     converted_amount = response.json().get('converted_amount_in_usd')
+#     put_log_event(f'Payment done in USD successfully of {converted_amount}')
+#     return jsonify({"status": "success", "converted_amount": converted_amount}), 200
 
 # # Scenario 2: Simulate Error Responses
 # @app.route('/process', methods=['POST'])

@@ -66,7 +66,7 @@ def convert():
     base_currency = request.args.get('currency')
 
     if not amount or not base_currency:
-        return jsonify({"error": "Missing required parameters"}), 400
+        return jsonify({"error": "Missing required parameters", "amount": amount, "currency": currency}), 400
 
     try:
         amount = float(amount)
@@ -74,7 +74,7 @@ def convert():
         return jsonify({"error": "Invalid amount format"}), 400
 
     # Simulate delay
-    time.sleep(random.uniform(0.5, 2.0))
+    # time.sleep(random.uniform(0.5, 0.7))
 
     # Use the freecurrencyapi.io service
     api_key = 'fca_live_j805PsM8I5AkfzIqKiTrujwUGnFBMEXAqASwZhZB'

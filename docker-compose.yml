@@ -1,7 +1,7 @@
 version: '3.7'
 
 services:
-  db:
+  payment_db:
     image: postgres:13
     environment:
       POSTGRES_DB: fastbite
@@ -19,7 +19,7 @@ services:
       - ./logs:/var/log/shared  # Mount shared logs directory
       - ~/.aws:/root/.aws:ro  # Mount AWS credentials
     depends_on:
-      - db
+      - payment_db
       - external_service
     ports:
       - "5000:5000"
